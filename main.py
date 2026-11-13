@@ -293,6 +293,17 @@ def altura_superficie(x, z, pies, triangulos, paso_max=ALTURA_ESCALON):
 
 
 def main():
+    shot = os.environ.get("SHOT")
+
+    # Seleccionar punto de inicio (spawn)
+    spawn_inicial = None
+    if not shot:
+        try:
+            from Spawns import mostrar_menu_spawns
+            spawn_inicial = mostrar_menu_spawns()
+        except Exception as error:
+            print(f"Aviso: No se pudo abrir el menu de spawns ({error}). Usando posicion por defecto.")
+
     if not glfw.init():
         sys.exit("No se pudo iniciar GLFW")
 
@@ -301,9 +312,15 @@ def main():
     glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
     glfw.window_hint(glfw.SAMPLES, 4)
 
+    # Titulo de la ventana con el salon seleccionado
+    titulo_ventana = "Simulador Desastre 3D - Pabellon"
+    if spawn_inicial:
+        posicion, yaw_inicio, pitch_inicio, info_salon = spawn_inicial
+        titulo_ventana = f"Simulador Desastre 3D - Pabellon [{info_salon.get('piso', '')} - {info_salon.get('aula', '')}]"
+
     win = glfw.create_window(
         1280, 720,
-        "Simulador Desastre 3D - Pabellon",
+        titulo_ventana,
         None, None
     )
 
@@ -335,15 +352,19 @@ def main():
     glClearColor(0.62, 0.74, 0.88, 1)
 
     # Posición inicial del jugador
-    eye = np.array([0.0, 1.7, 26.0], np.float32)
-
-    # Empezar con los pies sobre el terreno exterior.
-    eye[1] = SUELO_EXTERIOR + ALTURA_OJOS
-    velocidad_y = 0.0
-    yaw = -90.0
-    pitch = -2.0
-
-    shot = os.environ.get("SHOT")
+    if spawn_inicial:
+        posicion, yaw_inicio, pitch_inicio, info_salon = spawn_inicial
+        eye = np.array(posicion, np.float32)
+        velocidad_y = 0.0
+        yaw = float(yaw_inicio)
+        pitch = float(pitch_inicio)
+        print(f"Spawn seleccionado: {info_salon.get('descripcion', 'Punto de inicio')}")
+    else:
+        eye = np.array([0.0, 1.7, 26.0], np.float32)
+        eye[1] = SUELO_EXTERIOR + ALTURA_OJOS
+        velocidad_y = 0.0
+        yaw = -90.0
+        pitch = -2.0
 
     if shot:
         shot, pos, yaw, pitch = shot.split(";")
